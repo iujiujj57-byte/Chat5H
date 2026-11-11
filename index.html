@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1b1c20">
+  <title>Chat5H</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <section class="auth-screen" id="authScreen">
+    <form class="auth-card" id="authForm">
+      <div class="auth-logo">5H</div>
+      <h1>Welcome to Chat5H</h1>
+      <p id="authSubtitle">Sign in to continue chatting.</p>
+      <label id="displayNameWrap" hidden>Display name
+        <input id="displayNameInput" type="text" maxlength="24" autocomplete="nickname" placeholder="Your name">
+      </label>
+      <label>Email
+        <input id="emailInput" type="email" autocomplete="email" required placeholder="you@example.com">
+      </label>
+      <label>Password
+        <input id="passwordInput" type="password" autocomplete="current-password" minlength="6" required placeholder="At least 6 characters">
+      </label>
+      <button class="primary-button" id="authSubmit" type="submit">Sign in</button>
+      <button class="text-button" id="authModeToggle" type="button">Need an account? Sign up</button>
+      <p class="error-message" id="authError" role="alert"></p>
+    </form>
+  </section>
+
+  <main class="app" id="chatApp" hidden>
+    <aside class="servers">
+      <div class="server-logo">5H</div>
+      <div class="server-divider"></div>
+      <div class="server-list" id="serverList"></div>
+      <button class="server-add" id="addServer" title="Create a server" aria-label="Create a server">+</button>
+    </aside>
+
+    <aside class="sidebar">
+      <header class="workspace">
+        <div><strong id="workspaceName">Chat5H</strong><small>Community chat</small></div>
+        <span class="online-dot"></span>
+      </header>
+      <div class="sidebar-scroll">
+        <div class="section-heading"><span>TEXT CHANNELS</span><button id="addChannel" title="Add channel" aria-label="Add channel">+</button></div>
+        <div class="channel-list" id="channelList"></div>
+        <div class="section-heading invite-heading"><span>INVITES</span></div>
+        <p class="invite-hint">Invite friends to this server with its code.</p>
+        <button class="copy-invite-btn" id="copyInviteBtn">Copy invite code</button>
+        <button class="secondary-button sidebar-action" id="joinServer">Join a server</button>
+        <button class="secondary-button sidebar-action" id="leaveServer">Leave server</button>
+      </div>
+      <footer class="profile">
+        <div class="avatar" id="myAvatar">U</div>
+        <div class="profile-text"><strong id="myName">User</strong><small>Online</small></div>
+        <button class="settings-button" id="openSettings" title="Settings" aria-label="Settings">⚙</button>
+      </footer>
+    </aside>
+
+    <section class="chat">
+      <header class="topbar">
+        <div class="channel-title"><span class="hash">#</span><strong id="currentChannel">general</strong><span class="topic" id="channelTopic">Welcome to Chat5H</span></div>
+        <div class="top-actions">
+          <input class="search" id="searchInput" type="search" placeholder="Search messages..." aria-label="Search messages">
+          <button class="icon-button" id="toggleMembers" title="Toggle members" aria-label="Toggle members">☷</button>
+        </div>
+      </header>
+      <div class="messages" id="messages">
+        <div class="welcome"><div class="welcome-icon">✦</div><h2>Welcome to Chat5H!</h2><p>This is the beginning of your conversation.</p></div>
+      </div>
+      <form class="composer" id="messageForm">
+        <button class="emoji-button" id="emojiButton" type="button" title="Add a smiley">☺</button>
+        <input id="messageInput" type="text" maxlength="2000" autocomplete="off" placeholder="Message #general" aria-label="Message">
+        <button class="send-button" type="submit" aria-label="Send message">➤</button>
+      </form>
+      <div class="demo-note">Chat5H · Be kind and keep it respectful.</div>
+    </section>
+
+    <aside class="members" id="membersPanel">
+      <h3>Members <span id="memberCount">0</span></h3>
+      <div class="member-group">ONLINE</div>
+      <div id="memberList"></div>
+    </aside>
+  </main>
+
+  <div class="modal-backdrop" id="settingsModal" hidden>
+    <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+      <header class="settings-header"><div><h2 id="settingsTitle">User settings</h2><p>Manage your Chat5H account.</p></div><button class="close-button" id="closeSettings" aria-label="Close settings">×</button></header>
+      <div class="settings-content">
+        <section class="settings-section">
+          <h3>PROFILE</h3>
+          <label>Display name<input id="settingsUsername" maxlength="24" placeholder="Display name"></label>
+          <button class="primary-button" id="saveUsername">Save username</button>
+        </section>
+        <section class="settings-section">
+          <h3>ACCOUNT</h3>
+          <div class="account-info"><span>Signed in as</span><strong id="settingsEmail"></strong></div>
+          <button class="secondary-button" id="switchAccount">Sign out / switch account</button>
+        </section>
+        <section class="settings-section danger-section">
+          <h3>DANGER ZONE</h3>
+          <p>Delete your login and profile. This does not automatically delete servers or old messages you created.</p>
+          <button class="delete-button" id="deleteAccount">Delete account</button>
+        </section>
+      </div>
+    </section>
+  </div>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script type="module" src="script.js"></script>
+</body>
+</html>

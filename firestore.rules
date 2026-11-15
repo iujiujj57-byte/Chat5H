@@ -87,10 +87,14 @@ service cloud.firestore {
         allow read: if isMember(serverId);
         allow create: if isMember(serverId) || isMemberAfter(serverId);
         allow update: if isMember(serverId);
+        allow delete: if signedIn()
+          && get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid;
         match /messages/{messageId} {
           allow read, create: if isMember(serverId)
             && (request.method != 'create' || (request.resource.data.uid == request.auth.uid
                 && request.resource.data.get('image', '').size() < 500000));
+          allow delete: if signedIn()
+            && get(/databases/$(database)/documents/servers/$(serverId)).data.ownerId == request.auth.uid;
         }
       }
     }
@@ -149,7 +153,9 @@ service cloud.firestore {
         && existsAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId))
         && getAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.ownerId == request.auth.uid
         && getAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.inviteCode == inviteCode;
-      allow update, delete: if false;
+      allow update: if false;
+      allow delete: if signedIn()
+        && get(/databases/$(database)/documents/servers/$(resource.data.serverId)).data.ownerId == request.auth.uid;
     }
   }
 }

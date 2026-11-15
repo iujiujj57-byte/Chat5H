@@ -118,6 +118,9 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .workspace-tools{display:flex;align-items:center;gap:12px}
 .server-settings-button{width:30px;height:30px;border-radius:7px;background:#ffffff0b;color:var(--muted);font-size:17px}
 .server-settings-button:hover{background:#ffffff18;color:white}
+.leave-server-button{padding:7px 10px;border-radius:7px;background:#57272d;color:#ffb9bf;font-size:11px;font-weight:700}
+.leave-server-button:hover{background:var(--red);color:white}
+.leave-server-button:disabled{opacity:.55;cursor:wait}
 .server-add-wrap{display:flex;justify-content:center;width:100%}
 .server-add-backdrop{z-index:60}
 .server-add-modal{position:relative;width:min(440px,100%);padding:34px;background:#24262b;border:1px solid #50545f;border-radius:20px;box-shadow:0 28px 100px #000c;text-align:center}

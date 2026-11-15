@@ -38,12 +38,7 @@
       <div class="server-list" id="serverList"></div>
       <div class="server-add-wrap">
         <button class="server-add" id="addServer" title="Create or join a server" aria-label="Create or join a server" aria-expanded="false">+</button>
-        <div class="server-add-menu" id="serverAddMenu" hidden>
-          <button type="button" id="createServerOption">＋ Create a server</button>
-          <button type="button" id="joinServerOption">↗ Join a server</button>
-        </div>
       </div>
-    </aside>
 
     <aside class="sidebar">
       <header class="workspace">
@@ -60,7 +55,6 @@
         <p class="invite-hint">Invite friends to this server with its code.</p>
         <button class="copy-invite-btn" id="copyInviteBtn">Copy invite code</button>
 
-        <button class="delete-button sidebar-action" id="deleteServer" hidden>Delete server</button>
       </div>
       <div class="sidebar-scroll" id="dmScroll" hidden>
         <button class="primary-button sidebar-action" id="addFriendBtn">Add friend by email</button>
@@ -115,6 +109,26 @@
     </aside>
   </main>
 
+  <div class="modal-backdrop server-add-backdrop" id="serverAddMenu" hidden>
+    <section class="server-add-modal" role="dialog" aria-modal="true" aria-labelledby="serverAddTitle">
+      <button class="close-button server-add-close" id="closeServerAddMenu" type="button" aria-label="Close">×</button>
+      <div class="server-add-mark">＋</div>
+      <h2 id="serverAddTitle">Your next community starts here</h2>
+      <p>Start a new server or join one with an invite code.</p>
+      <div class="server-add-options">
+        <button type="button" class="server-add-option" id="createServerOption">
+          <span class="server-add-option-icon">＋</span>
+          <span><strong>Create a server</strong><small>Make a space for your friends</small></span>
+          <span class="server-add-arrow">›</span>
+        </button>
+        <button type="button" class="server-add-option" id="joinServerOption">
+          <span class="server-add-option-icon">↗</span>
+          <span><strong>Join a server</strong><small>Enter an invite code</small></span>
+          <span class="server-add-arrow">›</span>
+        </button>
+      </div>
+    </section>
+  </div>
   <div class="modal-backdrop" id="serverSettingsModal" hidden>
     <section class="settings-modal server-settings-modal" role="dialog" aria-modal="true" aria-labelledby="serverSettingsTitle">
       <header class="settings-header">

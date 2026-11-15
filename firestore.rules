@@ -56,7 +56,10 @@ service cloud.firestore {
       );
 
       match /channels/{channelId} {
-        allow read, create: if isMember(serverId);
+        allow read: if isMember(serverId);
+        // getAfter: the server is created in the same batch as its first channel.
+        allow create: if signedIn()
+          && request.auth.uid in getAfter(/databases/$(database)/documents/servers/$(serverId)).data.members;
         allow update: if isMember(serverId);
         match /messages/{messageId} {
           allow read, create: if isMember(serverId)
@@ -120,9 +123,9 @@ service cloud.firestore {
       allow list: if false;
       allow create: if signedIn()
         && request.resource.data.createdBy == request.auth.uid
-        && exists(/databases/$(database)/documents/servers/$(request.resource.data.serverId))
-        && get(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.ownerId == request.auth.uid
-        && get(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.inviteCode == inviteCode;
+        && existsAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId))
+        && getAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.ownerId == request.auth.uid
+        && getAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.inviteCode == inviteCode;
       allow update, delete: if false;
     }
   }

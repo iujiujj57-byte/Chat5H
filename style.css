@@ -113,3 +113,21 @@ button:disabled{opacity:.45;cursor:not-allowed}
 .call-btn{padding:11px 18px;border-radius:999px;background:#373a43;color:white;font-weight:700}
 .call-btn.accept{background:var(--green);color:#0d1a13}.call-btn.hang{background:var(--red)}
 @media(max-width:650px){.image-preview{margin-left:10px;margin-right:10px}}
+
+/* Server management and create/join menu */
+.workspace-tools{display:flex;align-items:center;gap:12px}
+.server-settings-button{width:30px;height:30px;border-radius:7px;background:#ffffff0b;color:var(--muted);font-size:17px}
+.server-settings-button:hover{background:#ffffff18;color:white}
+.server-add-wrap{position:relative}
+.server-add-menu{position:absolute;left:54px;bottom:0;z-index:25;width:190px;padding:6px;background:#24262b;border:1px solid #454852;border-radius:10px;box-shadow:0 12px 35px #0009}
+.server-add-menu button{display:block;width:100%;padding:11px 10px;border-radius:7px;background:transparent;color:#e6e8ed;text-align:left;font-size:12px}
+.server-add-menu button:hover{background:#ffffff14}
+.server-settings-modal{width:min(590px,100%)}
+.settings-help{color:var(--muted);font-size:12px;line-height:1.5;margin:-4px 0 12px}
+.server-settings-members{display:flex;flex-direction:column;gap:7px;max-height:250px;overflow-y:auto}
+.server-settings-member{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:10px 11px;border:1px solid var(--line);border-radius:8px;background:#1c1e23}
+.server-settings-member-label{display:flex;flex-direction:column;gap:4px;min-width:0}
+.server-settings-member-label strong{font-size:12px;overflow-wrap:anywhere}
+.server-settings-member-label small{font-size:10px;color:var(--muted)}
+.mini-btn.danger{background:#57272d;color:#ffb9bf}
+.mini-btn.danger:hover{background:var(--red);color:white}

@@ -517,6 +517,9 @@ function listenForMembers() {
 function renderInvite() {
   $("copyInviteBtn").disabled = !state.server?.inviteCode;
   $("leaveServer").disabled = !state.server;
+  $("deleteServer").hidden = !state.server
+    || state.server.id === COMMUNITY_SERVER_ID
+    || state.server.ownerId !== state.user?.uid;
 }
 
 $("addServer").addEventListener("click", async () => {
@@ -563,6 +566,28 @@ $("copyInviteBtn").addEventListener("click", async () => {
     toast("Invite code copied: " + code);
   } catch {
     prompt("Copy this invite code:", code);
+  }
+});
+
+$("deleteServer").addEventListener("click", async () => {
+  const server = state.server;
+  if (!server || server.id === COMMUNITY_SERVER_ID) return;
+  if (server.ownerId !== state.user?.uid) return toast("Only the server owner can delete this server.");
+  if (!confirm(`Permanently delete "${server.name}"? This removes the server from Chat5H for all members. This cannot be undone.`)) return;
+  try {
+    await deleteDoc(doc(db, "servers", server.id));
+    state.servers = state.servers.filter(item => item.id !== server.id);
+    state.serverId = null;
+    state.server = null;
+    stopChatListeners();
+    renderServers();
+    const community = state.servers.find(item => item.id === COMMUNITY_SERVER_ID);
+    if (community) selectServer(community.id);
+    else if (state.servers.length) selectServer(state.servers[0].id);
+    else showNoServer();
+    toast("Server deleted.");
+  } catch (error) {
+    toast("Couldn't delete server: " + friendlyError(error));
   }
 });
 

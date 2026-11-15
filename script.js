@@ -683,20 +683,25 @@ $("deleteServer").addEventListener("click", async () => {
   const button = $("deleteServer");
   button.disabled = true;
   button.textContent = "Deleting…";
+  let deleteStage = "reading server channels";
   try {
     const serverId = server.id;
     const channelsRef = collection(db, "servers", serverId, "channels");
     const channels = await getDocs(channelsRef);
 
-    // Remove channel messages first, then channel documents, then the server.
+    // Remove channel messages first, then channel documents, then the invite and server.
     for (const channelDoc of channels.docs) {
+      deleteStage = "reading messages in #" + channelDoc.id;
       await deleteCollectionDocuments(collection(db, "servers", serverId, "channels", channelDoc.id, "messages"));
+      deleteStage = "deleting channel #" + channelDoc.id;
       await deleteDoc(channelDoc.ref);
     }
 
     if (server.inviteCode) {
+      deleteStage = "deleting the server invite";
       await deleteDoc(doc(db, "invites", server.inviteCode));
     }
+    deleteStage = "deleting the server record";
     await deleteDoc(doc(db, "servers", serverId));
 
     state.servers = state.servers.filter(item => item.id !== serverId);
@@ -711,8 +716,9 @@ $("deleteServer").addEventListener("click", async () => {
     else showNoServer();
     toast("Server and its messages deleted.");
   } catch (error) {
-    console.error("Server deletion failed:", error);
-    toast("Couldn't fully delete server: " + friendlyError(error));
+    console.error("Server deletion failed during " + deleteStage + ":", error);
+    const detail = error?.code ? error.code + (error.message ? ": " + error.message : "") : (error.message || String(error));
+    toast("Delete failed while " + deleteStage + ". " + detail);
   } finally {
     button.disabled = false;
     button.textContent = "Delete server";

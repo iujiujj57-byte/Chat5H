@@ -288,7 +288,6 @@ function showNoServer() {
   $("memberList").replaceChildren();
   $("memberCount").textContent = "0";
   $("copyInviteBtn").disabled = true;
-  $("leaveServer").disabled = true;
   $("messageInput").disabled = true;
   $("emojiButton").disabled = true;
   $("gifButton").disabled = true;
@@ -511,22 +510,59 @@ function listenForMembers() {
       }
       root.append(row);
     }
+    if (!$("serverSettingsModal").hidden) renderServerSettingsMembers(profiles);
+    if (!$("serverSettingsModal").hidden && state.server) $("serverNameInput").value = state.server.name || "";
+    renderInvite();
   }, error => toast("Members error: " + friendlyError(error)));
 }
 
 function renderInvite() {
   $("copyInviteBtn").disabled = !state.server?.inviteCode;
-  $("leaveServer").disabled = !state.server;
-  $("deleteServer").hidden = !state.server
-    || state.server.id === COMMUNITY_SERVER_ID
-    || state.server.ownerId !== state.user?.uid;
+  const canManage = !!state.server
+    && state.server.id !== COMMUNITY_SERVER_ID
+    && state.server.ownerId === state.user?.uid;
+  $("openServerSettings").hidden = !canManage;
 }
 
-$("addServer").addEventListener("click", async () => {
+function closeServerAddMenu() {
+  $("serverAddMenu").hidden = true;
+  $("addServer").setAttribute("aria-expanded", "false");
+}
+$("addServer").addEventListener("click", () => {
+  const opening = $("serverAddMenu").hidden;
+  $("serverAddMenu").hidden = !opening;
+  $("addServer").setAttribute("aria-expanded", String(opening));
+});
+$("createServerOption").addEventListener("click", async () => {
+  closeServerAddMenu();
   const name = prompt("What should your server be called?");
   if (!name?.trim()) return;
   try { await createServer(name); } catch (error) { toast(friendlyError(error)); }
 });
+$("joinServerOption").addEventListener("click", () => {
+  closeServerAddMenu();
+  joinServerWithCode();
+});
+document.addEventListener("click", event => {
+  if (!event.target.closest(".server-add-wrap")) closeServerAddMenu();
+});
+
+async function joinServerWithCode() {
+  const code = prompt("Enter the server invite code:");
+  if (!code?.trim()) return;
+  try {
+    const cleanCode = code.trim().toUpperCase();
+    const inviteSnap = await getDoc(doc(db, "invites", cleanCode));
+    if (!inviteSnap.exists()) return toast("That invite code wasn't found.");
+    const invite = inviteSnap.data();
+    const serverRef = doc(db, "servers", invite.serverId);
+    const serverSnap = await getDoc(serverRef);
+    if (!serverSnap.exists()) return toast("That server no longer exists.");
+    if ((serverSnap.data().members || []).includes(state.user.uid)) return toast("You're already in that server.");
+    await updateDoc(serverRef, { members: arrayUnion(state.user.uid), joinCodeUsed: cleanCode });
+    toast("Joined server!");
+  } catch (error) { toast("Couldn't join: " + friendlyError(error)); }
+}
 $("addChannel").addEventListener("click", async () => {
   if (!state.server) return toast("Select a server first.");
   const raw = prompt("Channel name (letters, numbers and hyphens):");
@@ -545,19 +581,6 @@ $("addChannel").addEventListener("click", async () => {
   } catch (error) { toast("Couldn't create channel: " + friendlyError(error)); }
 });
 
-$("joinServer").addEventListener("click", async () => {
-  const code = prompt("Enter the server invite code:");
-  if (!code?.trim()) return;
-  try {
-    const inviteSnap = await getDoc(doc(db, "invites", code.trim().toUpperCase()));
-    if (!inviteSnap.exists()) return toast("That invite code wasn't found.");
-    const invite = inviteSnap.data();
-    const serverRef = doc(db, "servers", invite.serverId);
-    await updateDoc(serverRef, { members: arrayUnion(state.user.uid), joinCodeUsed: code.trim().toUpperCase() });
-    toast("Joined server!");
-  } catch (error) { toast("Couldn't join: " + friendlyError(error)); }
-});
-
 $("copyInviteBtn").addEventListener("click", async () => {
   const code = state.server?.inviteCode;
   if (!code) return;
@@ -566,6 +589,78 @@ $("copyInviteBtn").addEventListener("click", async () => {
     toast("Invite code copied: " + code);
   } catch {
     prompt("Copy this invite code:", code);
+  }
+});
+
+function renderServerSettingsMembers(profiles) {
+  const root = $("serverSettingsMembers");
+  if (!root) return;
+  root.replaceChildren();
+  const canManage = state.server
+    && state.server.id !== COMMUNITY_SERVER_ID
+    && state.server.ownerId === state.user?.uid;
+  if (!canManage) return;
+  for (const profile of profiles) {
+    const row = document.createElement("div");
+    row.className = "server-settings-member";
+    const label = document.createElement("div");
+    label.className = "server-settings-member-label";
+    const name = document.createElement("strong");
+    name.textContent = safeName(profile.displayName);
+    const role = document.createElement("small");
+    role.textContent = profile.uid === state.user.uid ? "Owner · You" : "Member";
+    label.append(name, role);
+    row.append(label);
+    if (profile.uid !== state.user.uid) {
+      const kick = document.createElement("button");
+      kick.type = "button";
+      kick.className = "mini-btn danger";
+      kick.textContent = "Remove";
+      kick.addEventListener("click", async () => {
+        if (!state.server || state.server.ownerId !== state.user.uid) return;
+        if (!confirm(`Remove ${safeName(profile.displayName)} from ${state.server.name}?`)) return;
+        try {
+          await updateDoc(doc(db, "servers", state.server.id), { members: arrayRemove(profile.uid) });
+          toast(profile.displayName + " was removed from the server.");
+        } catch (error) {
+          toast("Couldn't remove member: " + friendlyError(error));
+        }
+      });
+      row.append(kick);
+    }
+    root.append(row);
+  }
+}
+
+function openServerSettings() {
+  if (!state.server || state.server.id === COMMUNITY_SERVER_ID || state.server.ownerId !== state.user?.uid) return;
+  $("serverSettingsTitle").textContent = state.server.name + " settings";
+  $("serverNameInput").value = state.server.name || "";
+  $("serverSettingsModal").hidden = false;
+  const ids = state.server.members || [];
+  Promise.all(ids.map(async uid => {
+    const snap = await getDoc(doc(db, "users", uid));
+    return { uid, displayName: snap.exists() ? snap.data().displayName : "Member" };
+  })).then(renderServerSettingsMembers).catch(error => toast("Couldn't load members: " + friendlyError(error)));
+}
+$("openServerSettings").addEventListener("click", openServerSettings);
+$("closeServerSettings").addEventListener("click", () => $("serverSettingsModal").hidden = true);
+$("serverSettingsModal").addEventListener("click", event => {
+  if (event.target === $("serverSettingsModal")) $("serverSettingsModal").hidden = true;
+});
+$("saveServerName").addEventListener("click", async () => {
+  if (!state.server || state.server.id === COMMUNITY_SERVER_ID || state.server.ownerId !== state.user?.uid) return;
+  const name = safeName($("serverNameInput").value, "");
+  if (!name) return toast("Enter a server name first.");
+  try {
+    await updateDoc(doc(db, "servers", state.server.id), { name });
+    state.server.name = name;
+    $("workspaceName").textContent = name;
+    $("serverSettingsTitle").textContent = name + " settings";
+    renderServers();
+    toast("Server name updated.");
+  } catch (error) {
+    toast("Couldn't rename server: " + friendlyError(error));
   }
 });
 
@@ -589,26 +684,6 @@ $("deleteServer").addEventListener("click", async () => {
   } catch (error) {
     toast("Couldn't delete server: " + friendlyError(error));
   }
-});
-
-$("leaveServer").addEventListener("click", async () => {
-  if (!state.server) return;
-  const isOwner = state.server.ownerId === state.user.uid;
-  const members = state.server.members || [];
-  if (isOwner && members.length > 1) {
-    return toast("The server owner must transfer ownership before leaving.");
-  }
-  if (isOwner && members.length === 1) {
-    return toast("You own this server. Delete it or invite someone before leaving.");
-  }
-  if (!confirm(`Leave ${state.server.name}? The server will remain for its other members.`)) return;
-  try {
-    await updateDoc(doc(db, "servers", state.serverId), { members: arrayRemove(state.user.uid) });
-    state.serverId = null;
-    state.server = null;
-    stopChatListeners();
-    toast("You left the server.");
-  } catch (error) { toast("Couldn't leave: " + friendlyError(error)); }
 });
 
 $("searchInput").addEventListener("input", renderMessages);

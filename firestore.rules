@@ -154,8 +154,10 @@ service cloud.firestore {
         && getAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.ownerId == request.auth.uid
         && getAfter(/databases/$(database)/documents/servers/$(request.resource.data.serverId)).data.inviteCode == inviteCode;
       allow update: if false;
+      // The invite creator is the server owner who generated this code.
+      // Check the invite itself so deletion does not depend on a second document lookup.
       allow delete: if signedIn()
-        && get(/databases/$(database)/documents/servers/$(resource.data.serverId)).data.ownerId == request.auth.uid;
+        && resource.data.createdBy == request.auth.uid;
     }
   }
 }

@@ -522,6 +522,11 @@ function renderInvite() {
     && state.server.id !== COMMUNITY_SERVER_ID
     && state.server.ownerId === state.user?.uid;
   $("openServerSettings").hidden = !canManage;
+  const canLeave = !!state.server
+    && state.server.id !== COMMUNITY_SERVER_ID
+    && state.server.ownerId !== state.user?.uid
+    && (state.server.members || []).includes(state.user?.uid);
+  $("leaveServerButton").hidden = !canLeave;
 }
 
 function closeServerAddMenu() {
@@ -644,6 +649,23 @@ function openServerSettings() {
     return { uid, displayName: snap.exists() ? snap.data().displayName : "Member" };
   })).then(renderServerSettingsMembers).catch(error => toast("Couldn't load members: " + friendlyError(error)));
 }
+$("leaveServerButton").addEventListener("click", async () => {
+  const server = state.server;
+  if (!server || server.id === COMMUNITY_SERVER_ID || server.ownerId === state.user?.uid) return;
+  if (!confirm(`Leave "${server.name}"? You will need a new invite to join again.`)) return;
+  const button = $("leaveServerButton");
+  button.disabled = true;
+  try {
+    await updateDoc(doc(db, "servers", server.id), { members: arrayRemove(state.user.uid) });
+    $("serverSettingsModal").hidden = true;
+    toast("You left " + server.name + ".");
+    // The server-list listener will remove the server and select the community server.
+  } catch (error) {
+    toast("Couldn't leave server: " + friendlyError(error));
+  } finally {
+    button.disabled = false;
+  }
+});
 $("openServerSettings").addEventListener("click", openServerSettings);
 $("closeServerSettings").addEventListener("click", () => $("serverSettingsModal").hidden = true);
 $("serverSettingsModal").addEventListener("click", event => {

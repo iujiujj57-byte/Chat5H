@@ -1,4 +1,3 @@
-```javascript
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -34,8 +33,12 @@ service cloud.firestore {
           (request.resource.data.name == 'Chat5H'
             && request.resource.data.isCommunity == true));
 
-      allow read: if isMember(serverId)
-        || (signedIn() && serverId == 'chat5h-community');
+      // Use the document's own members field so Firestore can prove
+      // that the array-contains server-list query is authorised.
+      allow read: if signedIn() && (
+        request.auth.uid in resource.data.members
+        || serverId == 'chat5h-community'
+      );
 
       allow update: if signedIn() && (
         (resource.data.ownerId == request.auth.uid

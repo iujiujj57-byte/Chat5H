@@ -317,6 +317,23 @@ async function createServer(name, isWelcome = false) {
     if (state.pendingServerId === serverRef.id) state.pendingServerId = null;
     throw error;
   }
+  // Add the new server to the sidebar immediately instead of waiting
+  // for the Firestore query listener to deliver its next snapshot.
+  const newServer = {
+    id: serverRef.id,
+    name: cleanName,
+    ownerId: state.user.uid,
+    members: [state.user.uid],
+    inviteCode: code,
+    channels: ["general"]
+  };
+  state.servers = [
+    ...state.servers.filter(server => server.id !== serverRef.id),
+    newServer
+  ];
+  state.pendingServerId = null;
+  renderServers();
+  selectServer(serverRef.id);
   toast(isWelcome ? "Your Chat5H server is ready!" : "Server created!");
 }
 

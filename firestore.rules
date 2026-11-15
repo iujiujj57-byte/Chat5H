@@ -40,6 +40,11 @@ service cloud.firestore {
         || serverId == 'chat5h-community'
       );
 
+      // Only the owner may delete a personal server. The shared community is permanent.
+      allow delete: if signedIn()
+        && serverId != 'chat5h-community'
+        && resource.data.ownerId == request.auth.uid;
+
       allow update: if signedIn() && (
         (resource.data.ownerId == request.auth.uid
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['name', 'channels']))

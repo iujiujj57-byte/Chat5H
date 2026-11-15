@@ -533,18 +533,19 @@ $("addServer").addEventListener("click", () => {
   $("serverAddMenu").hidden = !opening;
   $("addServer").setAttribute("aria-expanded", String(opening));
 });
+$("closeServerAddMenu").addEventListener("click", closeServerAddMenu);
+$("serverAddMenu").addEventListener("click", event => {
+  if (event.target === $("serverAddMenu")) closeServerAddMenu();
+});
 $("createServerOption").addEventListener("click", async () => {
   closeServerAddMenu();
   const name = prompt("What should your server be called?");
   if (!name?.trim()) return;
-  try { await createServer(name); } catch (error) { toast(friendlyError(error)); }
+  try { await createServer(name); } catch (error) { toast("Couldn't create server: " + friendlyError(error)); }
 });
 $("joinServerOption").addEventListener("click", () => {
   closeServerAddMenu();
   joinServerWithCode();
-});
-document.addEventListener("click", event => {
-  if (!event.target.closest(".server-add-wrap")) closeServerAddMenu();
 });
 
 async function joinServerWithCode() {
@@ -664,25 +665,57 @@ $("saveServerName").addEventListener("click", async () => {
   }
 });
 
+async function deleteCollectionDocuments(ref) {
+  const snapshot = await getDocs(ref);
+  for (let start = 0; start < snapshot.docs.length; start += 450) {
+    const batch = writeBatch(db);
+    snapshot.docs.slice(start, start + 450).forEach(item => batch.delete(item.ref));
+    await batch.commit();
+  }
+}
+
 $("deleteServer").addEventListener("click", async () => {
   const server = state.server;
   if (!server || server.id === COMMUNITY_SERVER_ID) return;
   if (server.ownerId !== state.user?.uid) return toast("Only the server owner can delete this server.");
-  if (!confirm(`Permanently delete "${server.name}"? This removes the server from Chat5H for all members. This cannot be undone.`)) return;
+  if (!confirm(`Permanently delete "${server.name}"? This removes the server, its channels and messages for everyone. This cannot be undone.`)) return;
+
+  const button = $("deleteServer");
+  button.disabled = true;
+  button.textContent = "Deleting…";
   try {
-    await deleteDoc(doc(db, "servers", server.id));
-    state.servers = state.servers.filter(item => item.id !== server.id);
+    const serverId = server.id;
+    const channelsRef = collection(db, "servers", serverId, "channels");
+    const channels = await getDocs(channelsRef);
+
+    // Remove channel messages first, then channel documents, then the server.
+    for (const channelDoc of channels.docs) {
+      await deleteCollectionDocuments(collection(db, "servers", serverId, "channels", channelDoc.id, "messages"));
+      await deleteDoc(channelDoc.ref);
+    }
+
+    if (server.inviteCode) {
+      await deleteDoc(doc(db, "invites", server.inviteCode));
+    }
+    await deleteDoc(doc(db, "servers", serverId));
+
+    state.servers = state.servers.filter(item => item.id !== serverId);
     state.serverId = null;
     state.server = null;
     stopChatListeners();
+    $("serverSettingsModal").hidden = true;
     renderServers();
     const community = state.servers.find(item => item.id === COMMUNITY_SERVER_ID);
     if (community) selectServer(community.id);
     else if (state.servers.length) selectServer(state.servers[0].id);
     else showNoServer();
-    toast("Server deleted.");
+    toast("Server and its messages deleted.");
   } catch (error) {
-    toast("Couldn't delete server: " + friendlyError(error));
+    console.error("Server deletion failed:", error);
+    toast("Couldn't fully delete server: " + friendlyError(error));
+  } finally {
+    button.disabled = false;
+    button.textContent = "Delete server";
   }
 });
 
